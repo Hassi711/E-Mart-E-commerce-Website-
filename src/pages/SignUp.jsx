@@ -1,42 +1,53 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { Mail, Lock, Loader, AlertCircle } from "lucide-react";
-import { motion } from "framer-motion";
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import { Mail, Lock, User, Loader, AlertCircle } from 'lucide-react'
+import { motion } from 'framer-motion'
 
-const Login = () => {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
-
-    const { signIn, signInWithGoogle } = useAuth();
-    const navigate = useNavigate();
+const SignUp = () => {
+    const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
+    const [fullName, setFullName] = useState('')
+    const [error, setError] = useState('')
+    const [loading, setLoading] = useState(false)
+    const { signUp, signInWithGoogle } = useAuth()
+    const navigate = useNavigate()
 
     const handleGoogleSignIn = async () => {
         try {
-            const { error } = await signInWithGoogle();
-            if (error) throw error;
+            const { error } = await signInWithGoogle()
+            if (error) throw error
         } catch (err) {
-            setError(err.message);
+            setError(err.message)
         }
-    };
+    }
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError("");
-        setLoading(true);
+        e.preventDefault()
+        setError('')
+        setLoading(true)
 
         try {
-            const { error } = await signIn({ email, password });
-            if (error) throw error;
-            navigate("/");
+            // Pass metadata for the trigger to capture
+            const { error } = await signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        full_name: fullName,
+                        avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=random`
+                    }
+                }
+            })
+
+            if (error) throw error
+            navigate('/')
         } catch (err) {
-            setError(err.message);
+            setError(err.message)
         } finally {
-            setLoading(false);
+            setLoading(false)
         }
-    };
+    }
 
     return (
         <div className="min-h-screen pt-24 pb-12 flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-slate-50">
@@ -48,10 +59,10 @@ const Login = () => {
             >
                 <div className="text-center">
                     <h2 className="mt-6 text-3xl font-extrabold text-slate-900">
-                        Welcome Back
+                        Create an Account
                     </h2>
                     <p className="mt-2 text-sm text-slate-600">
-                        Sign in to your account to continue
+                        Join ModernShop today
                     </p>
                 </div>
 
@@ -60,7 +71,7 @@ const Login = () => {
                         {error && (
                             <motion.div
                                 initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: "auto" }}
+                                animate={{ opacity: 1, height: 'auto' }}
                                 className="bg-red-50 text-red-600 p-3 rounded-lg flex items-center gap-2 text-sm"
                             >
                                 <AlertCircle className="h-4 w-4" />
@@ -68,12 +79,29 @@ const Login = () => {
                             </motion.div>
                         )}
 
-                        {/* Email */}
                         <div>
-                            <label
-                                htmlFor="email"
-                                className="block text-sm font-medium text-slate-700"
-                            >
+                            <label htmlFor="fullName" className="block text-sm font-medium text-slate-700">
+                                Full Name
+                            </label>
+                            <div className="mt-1 relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <User className="h-5 w-5 text-slate-400" />
+                                </div>
+                                <input
+                                    id="fullName"
+                                    name="fullName"
+                                    type="text"
+                                    required
+                                    value={fullName}
+                                    onChange={(e) => setFullName(e.target.value)}
+                                    className="appearance-none block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm transition-colors"
+                                    placeholder="John Doe"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="email" className="block text-sm font-medium text-slate-700">
                                 Email address
                             </label>
                             <div className="mt-1 relative">
@@ -82,22 +110,20 @@ const Login = () => {
                                 </div>
                                 <input
                                     id="email"
+                                    name="email"
                                     type="email"
+                                    autoComplete="email"
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="you@example.com"
                                     className="appearance-none block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm transition-colors"
+                                    placeholder="you@example.com"
                                 />
                             </div>
                         </div>
 
-                        {/* Password */}
                         <div>
-                            <label
-                                htmlFor="password"
-                                className="block text-sm font-medium text-slate-700"
-                            >
+                            <label htmlFor="password" className="block text-sm font-medium text-slate-700">
                                 Password
                             </label>
                             <div className="mt-1 relative">
@@ -106,17 +132,18 @@ const Login = () => {
                                 </div>
                                 <input
                                     id="password"
+                                    name="password"
                                     type="password"
+                                    autoComplete="new-password"
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    autoComplete="current-password"
                                     className="appearance-none block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm transition-colors"
+                                    placeholder="••••••••"
                                 />
                             </div>
                         </div>
 
-                        {/* Button */}
                         <div>
                             <button
                                 type="submit"
@@ -126,7 +153,7 @@ const Login = () => {
                                 {loading ? (
                                     <Loader className="animate-spin h-5 w-5" />
                                 ) : (
-                                    "Sign in"
+                                    'Sign up'
                                 )}
                             </button>
                         </div>
@@ -139,17 +166,17 @@ const Login = () => {
                             </div>
                             <div className="relative flex justify-center text-sm">
                                 <span className="px-2 bg-white text-slate-500">
-                                    New to ModernShop?
+                                    Already have an account?
                                 </span>
                             </div>
                         </div>
 
                         <div className="mt-6">
                             <Link
-                                to="/signup"
+                                to="/login"
                                 className="w-full flex justify-center py-2.5 px-4 border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors"
                             >
-                                Create an account
+                                Sign in
                             </Link>
                         </div>
                         <div className="mt-6">
@@ -188,7 +215,7 @@ const Login = () => {
                                             fill="#EA4335"
                                         />
                                     </svg>
-                                    Sign in with Google
+                                    Sign up with Google
                                 </button>
                             </div>
                         </div>
@@ -196,7 +223,7 @@ const Login = () => {
                 </div>
             </motion.div>
         </div>
-    );
-};
+    )
+}
 
-export default Login;
+export default SignUp

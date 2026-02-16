@@ -1,14 +1,19 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { ShoppingCart, User, Menu, X, Search } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useCart } from '../context/CartContext'
 import logoImg from '../assets/videos/images/logo.jpeg'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const [scrolled, setScrolled] = useState(false)
-    const { user, signOut } = useAuth()
+    const { user, signOut, isAdmin } = useAuth()
+    const { getCartCount } = useCart()
+    const navigate = useNavigate();
+
+    const location = useLocation();
 
     // Handle scroll effect
     useEffect(() => {
@@ -18,6 +23,17 @@ const Navbar = () => {
         window.addEventListener('scroll', handleScroll)
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
+
+    const isHome = location.pathname === '/';
+
+    const handleLogout = async () => {
+        try {
+            await signOut();
+            navigate('/login');
+        } catch (error) {
+            console.error("Error signing out:", error);
+        }
+    };
 
     const navLinks = [
         { name: 'Home', path: '/' },
@@ -30,13 +46,13 @@ const Navbar = () => {
             initial={{ y: -100 }}
             animate={{ y: 0 }}
             transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-            className={`fixed top-0 w-full z-50 transition-all duration-300 border-b border-transparent ${scrolled ? 'bg-white/80 backdrop-blur-md shadow-sm border-slate-200/50' : 'bg-transparent text-white'
+            className={`fixed top-0 w-full z-50 transition-all duration-300 border-b border-transparent ${scrolled || !isHome ? 'bg-white/80 backdrop-blur-md shadow-sm border-slate-200/50' : 'bg-transparent text-white'
                 }`}
         >
             <div className="container mx-auto px-4 h-24 flex items-center justify-between">
                 {/* Logo Area - Text Only, Larger */}
                 <Link to="/" className="flex items-center space-x-3 group">
-                    <span className={`text-3xl font-bold font-sans tracking-tight transition-colors ${scrolled ? 'text-slate-900' : 'text-white'}`}>
+                    <span className={`text-3xl font-bold font-sans tracking-tight transition-colors ${scrolled || !isHome ? 'text-slate-900' : 'text-white'}`}>
                         Modern<span className="text-primary">Shop</span>
                     </span>
                 </Link>
@@ -56,31 +72,73 @@ const Navbar = () => {
                             {link.name}
                         </Link>
                     ))}
+                    {isAdmin && (
+                        <Link
+                            to="/admin/dashboard"
+                            className={`relative px-4 py-2 rounded-lg font-semibold text-lg tracking-wide transition-all 
+                                ${scrolled
+                                    ? 'text-slate-700 hover:bg-slate-100 hover:text-primary'
+                                    : 'text-slate-100 hover:bg-white/10 hover:text-white'
+                                }`}
+                        >
+                            Dashboard
+                        </Link>
+                    )}
                 </div>
 
                 {/* Right Actions - Larger Icons & Buttons */}
                 <div className="hidden md:flex items-center space-x-6">
                     {/* Search */}
                     <div className="relative group">
-                        <button className={`p-3 rounded-full transition-colors ${scrolled ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-white/10 text-white'}`}>
+                        <button className={`p-3 rounded-full transition-colors ${scrolled || !isHome ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-white/10 text-white'}`}>
                             <Search className="h-6 w-6" />
                         </button>
                     </div>
 
                     {/* Cart */}
                     <Link to="/cart" className="relative group">
-                        <div className={`p-3 rounded-full transition-colors ${scrolled ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-white/10 text-white'}`}>
+                        <div className={`p-3 rounded-full transition-colors ${scrolled || !isHome ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-white/10 text-white'}`}>
                             <ShoppingCart className="h-6 w-6" />
-                            <span className="absolute top-1 right-1 h-2.5 w-2.5 bg-red-500 rounded-full ring-2 ring-white"></span>
+                            {getCartCount() > 0 && (
+                                <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center bg-red-500 rounded-full text-white text-xs font-bold ring-2 ring-white">
+                                    {getCartCount()}
+                                </span>
+                            )}
                         </div>
                     </Link>
 
                     {/* User Auth */}
                     {user ? (
                         <div className="flex items-center space-x-4">
-                            <Link to="/profile" className={`font-semibold text-lg px-4 py-2 rounded-lg transition-colors ${scrolled ? 'text-slate-700 hover:bg-slate-100' : 'text-white hover:bg-white/10'}`}>
+                            <div className="flex items-center gap-2">
+                                {user.user_metadata?.avatar_url ? (
+                                    <img
+                                        src={user.user_metadata.avatar_url}
+                                        alt={user.user_metadata.full_name || 'User'}
+                                        className="h-8 w-8 rounded-full border border-slate-200"
+                                    />
+                                ) : (
+                                    <div className={`h-8 w-8 rounded-full flex items-center justify-center ${scrolled || !isHome ? 'bg-slate-100 text-slate-600' : 'bg-white/20 text-white'}`}>
+                                        <User className="h-5 w-5" />
+                                    </div>
+                                )}
+                                <span className={`font-medium hidden lg:block ${scrolled || !isHome ? 'text-slate-700' : 'text-white'}`}>
+                                    {user.user_metadata?.full_name || 'User'}
+                                </span>
+                            </div>
+
+                            <Link to="/orders" className={`font-semibold text-lg px-4 py-2 rounded-lg transition-colors ${scrolled || !isHome ? 'text-slate-700 hover:bg-slate-100' : 'text-white hover:bg-white/10'}`}>
+                                Orders
+                            </Link>
+                            <Link to="/profile" className={`font-semibold text-lg px-4 py-2 rounded-lg transition-colors ${scrolled || !isHome ? 'text-slate-700 hover:bg-slate-100' : 'text-white hover:bg-white/10'}`}>
                                 My Account
                             </Link>
+                            <button
+                                onClick={handleLogout}
+                                className={`font-semibold text-lg px-4 py-2 rounded-lg transition-colors ${scrolled || !isHome ? 'text-slate-700 hover:bg-slate-100' : 'text-white hover:bg-white/10'}`}
+                            >
+                                Logout
+                            </button>
                         </div>
                     ) : (
                         <Link to="/login">
@@ -97,7 +155,7 @@ const Navbar = () => {
 
                 {/* Mobile Menu Button - Larger */}
                 <button
-                    className={`md:hidden p-3 rounded-xl transition-colors ${scrolled ? 'text-slate-800 hover:bg-slate-100' : 'text-white hover:bg-white/10'}`}
+                    className={`md:hidden p-3 rounded-xl transition-colors ${scrolled || !isHome ? 'text-slate-800 hover:bg-slate-100' : 'text-white hover:bg-white/10'}`}
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
                 >
                     {isMenuOpen ? <X className="h-8 w-8" /> : <Menu className="h-8 w-8" />}
@@ -124,14 +182,49 @@ const Navbar = () => {
                                     {link.name}
                                 </Link>
                             ))}
+                            {isAdmin && (
+                                <Link
+                                    to="/admin/dashboard"
+                                    className="block px-6 py-4 rounded-xl hover:bg-slate-100 text-slate-800 font-bold text-xl"
+                                    onClick={() => setIsMenuOpen(false)}
+                                >
+                                    Dashboard
+                                </Link>
+                            )}
                             <div className="pt-4 border-t border-slate-100 grid grid-cols-2 gap-4">
                                 <Link to="/cart" className="flex items-center justify-center space-x-2 p-4 rounded-xl bg-slate-50 text-slate-800 font-bold text-lg">
                                     <ShoppingCart className="h-6 w-6" />
-                                    <span>Cart</span>
+                                    <span>Cart {getCartCount() > 0 && `(${getCartCount()})`}</span>
                                 </Link>
-                                <Link to="/login" className="flex items-center justify-center p-4 rounded-xl bg-primary text-white font-bold text-lg">
-                                    Sign In
-                                </Link>
+                                {user ? (
+                                    <>
+                                        <div className="flex items-center justify-center gap-3 p-4 rounded-xl bg-slate-50">
+                                            {user.user_metadata?.avatar_url ? (
+                                                <img
+                                                    src={user.user_metadata.avatar_url}
+                                                    alt={user.user_metadata.full_name}
+                                                    className="h-10 w-10 rounded-full"
+                                                />
+                                            ) : (
+                                                <User className="h-6 w-6 text-slate-500" />
+                                            )}
+                                            <span className="font-semibold text-slate-700">{user.user_metadata?.full_name || 'User'}</span>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                handleLogout();
+                                                setIsMenuOpen(false);
+                                            }}
+                                            className="flex items-center justify-center p-4 rounded-xl bg-slate-100 text-slate-800 font-bold text-lg hover:bg-slate-200"
+                                        >
+                                            Logout
+                                        </button>
+                                    </>
+                                ) : ( // ... existing sign in button ...
+                                    <Link to="/login" className="flex items-center justify-center p-4 rounded-xl bg-primary text-white font-bold text-lg">
+                                        Sign In
+                                    </Link>
+                                )}
                             </div>
                         </div>
                     </motion.div>

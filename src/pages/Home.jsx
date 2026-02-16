@@ -6,8 +6,36 @@ import electronicsImg from '../assets/videos/images/electronics.jpeg'
 import fashionImg from '../assets/videos/images/fashion.jpeg'
 import homeImg from '../assets/videos/images/home&living.jpeg'
 import accessoriesImg from '../assets/videos/images/Accessories.jpeg'
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
 const Home = () => {
+    const [products, setProducts] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
+
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('products')
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('created_at', { ascending: false })
+
+                if (error) throw error
+                setProducts(data)
+            } catch (err) {
+                console.error('Error fetching products:', err)
+                setError(err.message)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchProducts()
+    }, [])
+
     return (
         <div className="flex flex-col">
 
@@ -199,39 +227,56 @@ const Home = () => {
                             View all <ArrowRight className="ml-1 h-4 w-4 transform group-hover:translate-x-1 transition-transform" />
                         </Link>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                        {[
-                            { id: 1, name: 'Premium Wireless Headphones', price: 299.00, img: electronicsImg, cat: 'Audio' },
-                            { id: 2, name: 'Minimalist Watch Series 5', price: 199.50, img: accessoriesImg, cat: 'Accessories' },
-                            { id: 3, name: 'Smart Home Hub Pro', price: 149.99, img: homeImg, cat: 'Smart Home' },
-                            { id: 4, name: 'Urban Streetwear Jacket', price: 89.00, img: fashionImg, cat: 'Fashion' }
-                        ].map((item) => (
-                            <div key={item.id} className="bg-white rounded-3xl p-5 hover:shadow-2xl transition-all duration-300 group
-                            shadow-[0_10px_20px_rgba(0,0,0,0.02),0_2px_6px_rgba(0,0,0,0.02)]
-                            border border-slate-100/80">
-                                <div className="h-56 rounded-2xl mb-5 overflow-hidden relative
-                                shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] bg-slate-100">
-                                    <img
-                                        src={item.img}
-                                        alt={item.name}
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 mix-blend-multiply"
-                                    />
-                                    {/* Glass Tag */}
-                                    <div className="absolute top-3 right-3 bg-white/70 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-slate-800 shadow-sm border border-white/50">
-                                        {item.cat}
+
+                    {loading ? (
+                        <div className="flex justify-center py-12">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                        </div>
+                    ) : error ? (
+                        <div className="text-center py-12 text-red-500">
+                            Failed to load products. Please try again later.
+                        </div>
+                    ) : products.length === 0 ? (
+                        <div className="text-center py-12 text-slate-500">
+                            No products found.
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                            {products.slice(0, 4).map((item) => (
+                                <div key={item.id} className="bg-white rounded-3xl p-5 hover:shadow-2xl transition-all duration-300 group
+                                shadow-[0_10px_20px_rgba(0,0,0,0.02),0_2px_6px_rgba(0,0,0,0.02)]
+                                border border-slate-100/80">
+                                    <div className="h-56 rounded-2xl mb-5 overflow-hidden relative
+                                    shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] bg-slate-100">
+                                        {item.images && item.images[0] ? (
+                                            <img
+                                                src={item.images[0]}
+                                                alt={item.name}
+                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 mix-blend-multiply"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                                No Image
+                                            </div>
+                                        )}
+                                        {/* Glass Tag */}
+                                        <div className="absolute top-3 right-3 bg-white/70 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-slate-800 shadow-sm border border-white/50">
+                                            {item.category_id ? 'Product' : 'Item'}
+                                        </div>
+                                    </div>
+                                    <h3 className="font-bold text-lg mb-1 truncate text-slate-800 tracking-tight">{item.name}</h3>
+                                    <p className="text-sm text-slate-500 mb-2 truncate">{item.description}</p>
+                                    <div className="flex items-center justify-between mt-4">
+                                        <span className="text-2xl font-bold text-slate-900 tracking-tighter">${parseFloat(item.price).toFixed(2)}</span>
+                                        <button className="bg-slate-900 text-white h-10 w-10 rounded-full flex items-center justify-center
+                                        shadow-[0_4px_10px_rgba(0,0,0,0.3)] hover:bg-primary hover:scale-110 hover:shadow-primary/40 active:scale-95 transition-all">
+                                            <ArrowRight className="h-5 w-5" />
+                                        </button>
                                     </div>
                                 </div>
-                                <h3 className="font-bold text-lg mb-1 truncate text-slate-800 tracking-tight">{item.name}</h3>
-                                <div className="flex items-center justify-between mt-4">
-                                    <span className="text-2xl font-bold text-slate-900 tracking-tighter">${item.price.toFixed(2)}</span>
-                                    <button className="bg-slate-900 text-white h-10 w-10 rounded-full flex items-center justify-center
-                                    shadow-[0_4px_10px_rgba(0,0,0,0.3)] hover:bg-primary hover:scale-110 hover:shadow-primary/40 active:scale-95 transition-all">
-                                        <ArrowRight className="h-5 w-5" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
         </div>
