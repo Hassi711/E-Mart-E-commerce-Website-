@@ -1,11 +1,13 @@
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useCart } from '../context/CartContext'
 import { Star, Truck, Shield, ArrowRight, Loader } from 'lucide-react'
+import ProductReviews from '../components/ProductReviews'
 
 const ProductDetails = () => {
     const { id } = useParams()
+    const navigate = useNavigate()
     const [product, setProduct] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
@@ -95,7 +97,10 @@ const ProductDetails = () => {
 
                         <div className="flex gap-4 mb-8">
                             <button
-                                onClick={() => addToCart(product)}
+                                onClick={() => {
+                                    addToCart(product)
+                                    navigate('/cart')
+                                }}
                                 className="flex-1 bg-slate-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-primary transition-colors shadow-xl shadow-blue-900/10 active:scale-[0.98] transform flex items-center justify-center gap-2"
                             >
                                 Add to Cart <ArrowRight className="w-5 h-5" />
@@ -120,6 +125,7 @@ const ProductDetails = () => {
                         </div>
                     </div>
                 </div>
+                <ProductReviews productId={product.id} />
             </div>
         </div>
     )

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { Search, Filter, ArrowRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 
 const Products = () => {
@@ -12,6 +12,7 @@ const Products = () => {
     const [searchTerm, setSearchTerm] = useState('')
     const [categoryFilter, setCategoryFilter] = useState('All')
     const { addToCart } = useCart()
+    const navigate = useNavigate()
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -137,8 +138,12 @@ const Products = () => {
                                 <div className="flex items-center justify-between mt-auto">
                                     <span className="text-2xl font-bold text-slate-900 tracking-tighter">${parseFloat(product.price).toFixed(2)}</span>
                                     <button
-                                        onClick={() => addToCart(product)}
-                                        className="bg-slate-900 text-white h-10 w-10 rounded-full flex items-center justify-center shadow-lg hover:bg-primary hover:scale-110 transition-all"
+                                        onClick={(e) => {
+                                            e.preventDefault(); // Prevent Link navigation if wrapped
+                                            addToCart(product)
+                                            navigate('/cart')
+                                        }}
+                                        className="bg-slate-900 text-white h-10 w-10 rounded-full flex items-center justify-center shadow-lg hover:bg-primary hover:scale-110 transition-all active:scale-95"
                                     >
                                         <ArrowRight className="h-5 w-5" />
                                     </button>

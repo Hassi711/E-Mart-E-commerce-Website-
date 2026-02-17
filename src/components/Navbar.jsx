@@ -6,8 +6,11 @@ import { useCart } from '../context/CartContext'
 import logoImg from '../assets/videos/images/logo.jpeg'
 import { motion, AnimatePresence } from 'framer-motion'
 
+import SidePanel from './SidePanel'
+
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false)
+    const [isSidePanelOpen, setIsSidePanelOpen] = useState(false)
     const [scrolled, setScrolled] = useState(false)
     const { user, signOut, isAdmin } = useAuth()
     const { getCartCount } = useCart()
@@ -64,7 +67,7 @@ const Navbar = () => {
                             key={link.name}
                             to={link.path}
                             className={`relative px-4 py-2 rounded-lg font-semibold text-lg tracking-wide transition-all 
-                                ${scrolled
+                                ${scrolled || !isHome
                                     ? 'text-slate-700 hover:bg-slate-100 hover:text-primary'
                                     : 'text-slate-100 hover:bg-white/10 hover:text-white'
                                 }`}
@@ -76,7 +79,7 @@ const Navbar = () => {
                         <Link
                             to="/admin/dashboard"
                             className={`relative px-4 py-2 rounded-lg font-semibold text-lg tracking-wide transition-all 
-                                ${scrolled
+                                ${scrolled || !isHome
                                     ? 'text-slate-700 hover:bg-slate-100 hover:text-primary'
                                     : 'text-slate-100 hover:bg-white/10 hover:text-white'
                                 }`}
@@ -110,7 +113,10 @@ const Navbar = () => {
                     {/* User Auth */}
                     {user ? (
                         <div className="flex items-center space-x-4">
-                            <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setIsSidePanelOpen(true)}
+                                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                            >
                                 {user.user_metadata?.avatar_url ? (
                                     <img
                                         src={user.user_metadata.avatar_url}
@@ -125,20 +131,9 @@ const Navbar = () => {
                                 <span className={`font-medium hidden lg:block ${scrolled || !isHome ? 'text-slate-700' : 'text-white'}`}>
                                     {user.user_metadata?.full_name || 'User'}
                                 </span>
-                            </div>
-
-                            <Link to="/orders" className={`font-semibold text-lg px-4 py-2 rounded-lg transition-colors ${scrolled || !isHome ? 'text-slate-700 hover:bg-slate-100' : 'text-white hover:bg-white/10'}`}>
-                                Orders
-                            </Link>
-                            <Link to="/profile" className={`font-semibold text-lg px-4 py-2 rounded-lg transition-colors ${scrolled || !isHome ? 'text-slate-700 hover:bg-slate-100' : 'text-white hover:bg-white/10'}`}>
-                                My Account
-                            </Link>
-                            <button
-                                onClick={handleLogout}
-                                className={`font-semibold text-lg px-4 py-2 rounded-lg transition-colors ${scrolled || !isHome ? 'text-slate-700 hover:bg-slate-100' : 'text-white hover:bg-white/10'}`}
-                            >
-                                Logout
                             </button>
+
+                            <SidePanel isOpen={isSidePanelOpen} onClose={() => setIsSidePanelOpen(false)} />
                         </div>
                     ) : (
                         <Link to="/login">

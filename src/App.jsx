@@ -13,6 +13,7 @@ import ProductDetails from './pages/ProductDetails'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import Orders from './pages/Orders'
+import Categories from './pages/Categories'
 const Profile = () => <div className="p-10">Profile</div>
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
               <Route path="cart" element={<Cart />} />
               <Route path="checkout" element={<Checkout />} />
               <Route path="orders" element={<Orders />} />
+              <Route path="categories" element={<Categories />} />
               <Route path="profile" element={<Profile />} />
               <Route path="admin/dashboard" element={<AdminDashboard />} />
             </Route>

@@ -1,4 +1,10 @@
 import { motion } from 'framer-motion'
+import HeroSlider from '../components/HeroSlider'
+import SaleProducts from '../components/SaleProducts'
+import Newsletter from '../components/Newsletter'
+import Features from '../components/Features'
+import Testimonials from '../components/Testimonials'
+import BrandTicker from '../components/BrandTicker'
 import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import videoBg from '../assets/videos/v1.mp4'
@@ -142,36 +148,65 @@ const Home = () => {
 
             {/* Content Sections */}
 
-            {/* Featured Categories - Full Width Green */}
-            <section className="bg-[#f0f9f4] py-16 relative">
-                {/* Subtle texture overlay for paper-like feel */}
+            {/* Featured Categories - Full Width & Dominated */}
+            <section className="bg-[#f0f9f4] py-24 relative overflow-hidden">
+                {/* Subtle texture overlay */}
                 <div className="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] pointer-events-none"></div>
-                <div className="container mx-auto px-4 relative z-10">
-                    <h2 className="text-3xl font-bold mb-10 text-slate-800 drop-shadow-sm">Shop by Category</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+
+                <div className="container mx-auto px-4 relative z-10 max-w-7xl">
+                    <div className="flex flex-col md:flex-row justify-between items-end mb-12">
+                        <div>
+                            <span className="text-sm font-bold tracking-wider text-slate-500 uppercase mb-2 block">Collections</span>
+                            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 drop-shadow-sm">Shop by Category</h2>
+                        </div>
+                        <Link to="/categories" className="hidden md:flex items-center gap-2 text-slate-700 font-bold hover:text-primary transition-colors text-lg group">
+                            View All Categories <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                         {[
-                            { name: 'Electronics', img: electronicsImg },
-                            { name: 'Fashion', img: fashionImg },
-                            { name: 'Home & Living', img: homeImg },
-                            { name: 'Accessories', img: accessoriesImg }
+                            { name: 'Electronics', img: electronicsImg, id: 'Electronics', size: 'col-span-1 md:col-span-2 lg:col-span-2' },
+                            { name: 'Fashion', img: fashionImg, id: 'Fashion', size: 'col-span-1' },
+                            { name: 'Home & Living', img: homeImg, id: 'Home', size: 'col-span-1' },
+                            { name: 'Accessories', img: accessoriesImg, id: 'Accessories', size: 'col-span-1 md:col-span-2 lg:col-span-4 h-[400px]' } // Full width bottom
                         ].map((cat, i) => (
-                            <div key={i} className="group cursor-pointer relative overflow-hidden rounded-3xl h-56 transition-all duration-300
-                            shadow-[8px_8px_16px_#d1d9e6,-8px_-8px_16px_#ffffff] hover:shadow-[inset_5px_5px_10px_#d1d9e6,inset_-5px_-5px_10px_#ffffff]
-                            border border-white/50">
+                            <Link
+                                to={`/categories#${cat.id}`}
+                                key={i}
+                                className={`group cursor-pointer relative overflow-hidden rounded-[2rem] transition-all duration-500
+                                shadow-[10px_10px_30px_#d1d9e6,-10px_-10px_30px_#ffffff] hover:shadow-2xl hover:-translate-y-2
+                                border border-white/50 h-96 ${cat.size || 'col-span-1'}`}
+                            >
                                 <img
                                     src={cat.img}
                                     alt={cat.name}
-                                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent"></div>
-                                <div className="absolute inset-x-0 bottom-0 p-6">
-                                    <h3 className="text-white font-bold text-xl drop-shadow-md transform group-hover:-translate-y-1 transition-transform">{cat.name}</h3>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
+                                <div className="absolute inset-0 p-8 flex flex-col justify-end">
+                                    <h3 className="text-white font-bold text-3xl md:text-4xl drop-shadow-lg transform group-hover:-translate-y-2 transition-transform duration-300">
+                                        {cat.name}
+                                    </h3>
+                                    <div className="h-0 group-hover:h-8 transition-all duration-300 overflow-hidden opacity-0 group-hover:opacity-100">
+                                        <p className="text-slate-200 font-medium flex items-center gap-2">
+                                            Explore Collection <ArrowRight className="h-4 w-4" />
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
+                            </Link>
                         ))}
                     </div>
                 </div>
             </section>
+
+            {/* Hero Slider - Featured Products */}
+            <HeroSlider />
+
+            {/* Sale Products Section */}
+            <SaleProducts />
+
+
 
             {/* Hot/Featured Product Section - Full Width Dark */}
             <section className="bg-slate-900 overflow-hidden text-white py-0 relative">
@@ -246,39 +281,55 @@ const Home = () => {
                                 <div key={item.id} className="bg-white rounded-3xl p-5 hover:shadow-2xl transition-all duration-300 group
                                 shadow-[0_10px_20px_rgba(0,0,0,0.02),0_2px_6px_rgba(0,0,0,0.02)]
                                 border border-slate-100/80">
-                                    <div className="h-56 rounded-2xl mb-5 overflow-hidden relative
-                                    shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] bg-slate-100">
-                                        {item.images && item.images[0] ? (
-                                            <img
-                                                src={item.images[0]}
-                                                alt={item.name}
-                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 mix-blend-multiply"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-slate-400">
-                                                No Image
+                                    <Link to={`/product/${item.id}`}>
+                                        <div className="h-56 rounded-2xl mb-5 overflow-hidden relative
+                                        shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] bg-slate-100">
+                                            {item.images && item.images[0] ? (
+                                                <img
+                                                    src={item.images[0]}
+                                                    alt={item.name}
+                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 mix-blend-multiply"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                                    No Image
+                                                </div>
+                                            )}
+                                            {/* Glass Tag */}
+                                            <div className="absolute top-3 right-3 bg-white/70 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-slate-800 shadow-sm border border-white/50">
+                                                {item.category_id ? 'Product' : 'Item'}
                                             </div>
-                                        )}
-                                        {/* Glass Tag */}
-                                        <div className="absolute top-3 right-3 bg-white/70 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-slate-800 shadow-sm border border-white/50">
-                                            {item.category_id ? 'Product' : 'Item'}
                                         </div>
-                                    </div>
-                                    <h3 className="font-bold text-lg mb-1 truncate text-slate-800 tracking-tight">{item.name}</h3>
-                                    <p className="text-sm text-slate-500 mb-2 truncate">{item.description}</p>
-                                    <div className="flex items-center justify-between mt-4">
-                                        <span className="text-2xl font-bold text-slate-900 tracking-tighter">${parseFloat(item.price).toFixed(2)}</span>
-                                        <button className="bg-slate-900 text-white h-10 w-10 rounded-full flex items-center justify-center
-                                        shadow-[0_4px_10px_rgba(0,0,0,0.3)] hover:bg-primary hover:scale-110 hover:shadow-primary/40 active:scale-95 transition-all">
-                                            <ArrowRight className="h-5 w-5" />
-                                        </button>
-                                    </div>
+                                        <h3 className="font-bold text-lg mb-1 truncate text-slate-800 tracking-tight group-hover:text-blue-600 transition-colors">{item.name}</h3>
+                                        <p className="text-sm text-slate-500 mb-2 truncate">{item.description}</p>
+                                        <div className="flex items-center justify-between mt-4">
+                                            <span className="text-2xl font-bold text-slate-900 tracking-tighter">${parseFloat(item.price).toFixed(2)}</span>
+                                            <button className="bg-slate-900 text-white h-10 w-10 rounded-full flex items-center justify-center
+                                            shadow-[0_4px_10px_rgba(0,0,0,0.3)] hover:bg-primary hover:scale-110 hover:shadow-primary/40 active:scale-95 transition-all">
+                                                <ArrowRight className="h-5 w-5" />
+                                            </button>
+                                        </div>
+                                    </Link>
                                 </div>
                             ))}
                         </div>
                     )}
                 </div>
             </section>
+
+            {/* Features Section - Why Choose Us */}
+            <Features />
+
+            {/* Brand Ticker Section - Trusted By */}
+            <BrandTicker />
+
+            {/* Testimonials Section */}
+            <Testimonials />
+
+
+
+            {/* Newsletter Section */}
+            <Newsletter />
         </div>
     )
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
-import { Plus, Edit, Trash2, Eye, EyeOff, Loader, CheckCircle, AlertCircle, RefreshCw, X, Save } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, EyeOff, Loader, CheckCircle, AlertCircle, RefreshCw, X, Save, Star, Package, ShoppingBag } from 'lucide-react'
 
 const AdminDashboard = () => {
     const { isAdmin } = useAuth()
@@ -10,6 +10,9 @@ const AdminDashboard = () => {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const [successMsg, setSuccessMsg] = useState('')
+    const [productRatings, setProductRatings] = useState({})
+    const [activeTab, setActiveTab] = useState('products')
+    const [orders, setOrders] = useState([])
 
     // Edit Modal State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -33,7 +36,7 @@ const AdminDashboard = () => {
                 .order('created_at', { ascending: false })
 
             if (error) throw error
-            setProducts(data)
+            setProducts(data || [])
         } catch (err) {
             console.error('Error fetching products:', err)
             setError(err.message)
@@ -42,11 +45,99 @@ const AdminDashboard = () => {
         }
     }
 
+    const fetchRatings = async () => {
+        const { data, error } = await supabase
+            .from('reviews')
+            .select('product_id, rating')
+
+        if (error) {
+            console.error('Error fetching ratings:', error)
+            return
+        }
+
+        const ratingsMap = {}
+        const countsMap = {}
+
+        data?.forEach(review => {
+            if (!ratingsMap[review.product_id]) {
+                ratingsMap[review.product_id] = 0
+                countsMap[review.product_id] = 0
+            }
+            ratingsMap[review.product_id] += review.rating
+            countsMap[review.product_id] += 1
+        })
+
+        const averageRatings = {}
+        Object.keys(ratingsMap).forEach(id => {
+            averageRatings[id] = (ratingsMap[id] / countsMap[id]).toFixed(1)
+        })
+
+        setProductRatings(averageRatings)
+    }
+
+    const fetchOrders = async () => {
+        setLoading(true)
+        setError(null)
+        try {
+            const { data, error } = await supabase
+                .from('orders')
+                .select(`
+                    *,
+                    order_items (
+                        *,
+                        products ( name )
+                    )
+                `)
+                .order('created_at', { ascending: false })
+
+            if (error) throw error
+            setOrders(data || [])
+        } catch (err) {
+            console.error('Error fetching orders:', err)
+            setError('Failed to fetch orders')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const updateOrderStatus = async (orderId, newStatus) => {
+        try {
+            const { error } = await supabase
+                .from('orders')
+                .update({ status: newStatus })
+                .eq('id', orderId)
+
+            if (error) throw error
+
+            // Add to history
+            const { error: historyError } = await supabase
+                .from('order_status_history')
+                .insert({
+                    order_id: orderId,
+                    status: newStatus,
+                    changed_by: (await supabase.auth.getUser()).data.user.id
+                })
+
+            if (historyError) console.error('Error updating history:', historyError)
+
+            setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o))
+            showSuccess(`Order status updated to ${newStatus}`)
+        } catch (err) {
+            console.error('Error updating order:', err)
+            setError('Failed to update order status')
+        }
+    }
+
     useEffect(() => {
         if (isAdmin) {
-            fetchProducts()
+            if (activeTab === 'products') {
+                fetchProducts()
+                fetchRatings()
+            } else {
+                fetchOrders()
+            }
         }
-    }, [isAdmin])
+    }, [isAdmin, activeTab])
 
     const deleteProduct = async (id) => {
         if (!window.confirm('Are you sure you want to delete this product?')) return
@@ -183,6 +274,40 @@ const AdminDashboard = () => {
                     </div>
                 </div>
 
+                {/* Tabs */}
+                <div className="flex gap-4 mb-8 border-b border-slate-200">
+                    <button
+                        onClick={() => setActiveTab('products')}
+                        className={`pb-4 px-2 font-medium transition-colors relative ${activeTab === 'products' ? 'text-primary' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <ShoppingBag className="w-5 h-5" />
+                            Products
+                        </div>
+                        {activeTab === 'products' && (
+                            <motion.div
+                                layoutId="activeTab"
+                                className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                            />
+                        )}
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('orders')}
+                        className={`pb-4 px-2 font-medium transition-colors relative ${activeTab === 'orders' ? 'text-primary' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <Package className="w-5 h-5" />
+                            Orders
+                        </div>
+                        {activeTab === 'orders' && (
+                            <motion.div
+                                layoutId="activeTab"
+                                className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                            />
+                        )}
+                    </button>
+                </div>
+
                 {/* Notifications */}
                 {error && (
                     <motion.div
@@ -207,98 +332,181 @@ const AdminDashboard = () => {
                 )}
 
                 {/* Products Table */}
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    {loading ? (
-                        <div className="p-12 flex justify-center">
-                            <Loader className="animate-spin h-8 w-8 text-primary" />
-                        </div>
-                    ) : products.length === 0 ? (
-                        <div className="p-12 text-center text-slate-500">
-                            No products found. Add your first product to get started.
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead className="bg-slate-50 border-b border-slate-200">
-                                    <tr>
-                                        <th className="px-6 py-4 font-semibold text-slate-700">Product</th>
-                                        <th className="px-6 py-4 font-semibold text-slate-700">Price</th>
-                                        <th className="px-6 py-4 font-semibold text-slate-700">Stock</th>
-                                        <th className="px-6 py-4 font-semibold text-slate-700">Status</th>
-                                        <th className="px-6 py-4 font-semibold text-slate-700 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {products.map((product) => (
-                                        <tr key={product.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="h-12 w-12 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200">
-                                                        {product.images && product.images[0] ? (
-                                                            <img src={product.images[0]} alt={product.name} className="h-full w-full object-cover" />
-                                                        ) : (
-                                                            <span className="text-xs text-slate-400">No Img</span>
-                                                        )}
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-medium text-slate-900">{product.name}</h3>
-                                                        <p className="text-xs text-slate-500 truncate max-w-[200px]">{product.description}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 font-medium text-slate-700">
-                                                ${parseFloat(product.price).toFixed(2)}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.stock > 10 ? 'bg-green-100 text-green-800' :
-                                                    product.stock > 0 ? 'bg-yellow-100 text-yellow-800' :
-                                                        'bg-red-100 text-red-800'
-                                                    }`}>
-                                                    {product.stock} in stock
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <button
-                                                    onClick={() => toggleProductStatus(product.id, product.is_active)}
-                                                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-colors border ${product.is_active
-                                                        ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                                                        : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-                                                        }`}
-                                                >
-                                                    {product.is_active ? (
-                                                        <>
-                                                            <Eye className="h-3 w-3" /> Visible
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <EyeOff className="h-3 w-3" /> Hidden
-                                                        </>
-                                                    )}
-                                                </button>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <button
-                                                        onClick={() => openEditModal(product)}
-                                                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                    >
-                                                        <Edit className="h-4 w-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => deleteProduct(product.id)}
-                                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
+                {activeTab === 'products' && (
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        {loading ? (
+                            <div className="p-12 flex justify-center">
+                                <Loader className="animate-spin h-8 w-8 text-primary" />
+                            </div>
+                        ) : products.length === 0 ? (
+                            <div className="p-12 text-center text-slate-500">
+                                No products found. Add your first product to get started.
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="bg-slate-50 border-b border-slate-200">
+                                        <tr>
+                                            <th className="px-6 py-4 font-semibold text-slate-700">Product</th>
+                                            <th className="px-6 py-4 font-semibold text-slate-700">Price</th>
+                                            <th className="px-6 py-4 font-semibold text-slate-700">Rating</th>
+                                            <th className="px-6 py-4 font-semibold text-slate-700">Stock</th>
+                                            <th className="px-6 py-4 font-semibold text-slate-700">Status</th>
+                                            <th className="px-6 py-4 font-semibold text-slate-700 text-right">Actions</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {products.map((product) => (
+                                            <tr key={product.id} className="hover:bg-slate-50/50 transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="h-12 w-12 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200">
+                                                            {product.images && product.images[0] ? (
+                                                                <img src={product.images[0]} alt={product.name} className="h-full w-full object-cover" />
+                                                            ) : (
+                                                                <span className="text-xs text-slate-400">No Img</span>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="font-medium text-slate-900">{product.name}</h3>
+                                                            <p className="text-xs text-slate-500 truncate max-w-[200px]">{product.description}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 font-medium text-slate-700">
+                                                    ${parseFloat(product.price).toFixed(2)}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center text-slate-700 font-medium">
+                                                        <Star className="w-4 h-4 text-yellow-400 fill-current mr-1" />
+                                                        {productRatings[product.id] || 'N/A'}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.stock > 10 ? 'bg-green-100 text-green-800' :
+                                                        product.stock > 0 ? 'bg-yellow-100 text-yellow-800' :
+                                                            'bg-red-100 text-red-800'
+                                                        }`}>
+                                                        {product.stock} in stock
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <button
+                                                        onClick={() => toggleProductStatus(product.id, product.is_active)}
+                                                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-colors border ${product.is_active
+                                                            ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                                                            : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                                                            }`}
+                                                    >
+                                                        {product.is_active ? (
+                                                            <>
+                                                                <Eye className="h-3 w-3" /> Visible
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <EyeOff className="h-3 w-3" /> Hidden
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <button
+                                                            onClick={() => openEditModal(product)}
+                                                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                        >
+                                                            <Edit className="h-4 w-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => deleteProduct(product.id)}
+                                                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Orders Table */}
+                {activeTab === 'orders' && (
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        {loading ? (
+                            <div className="p-12 flex justify-center">
+                                <Loader className="animate-spin h-8 w-8 text-primary" />
+                            </div>
+                        ) : orders.length === 0 ? (
+                            <div className="p-12 text-center text-slate-500">
+                                No orders found.
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead className="bg-slate-50 border-b border-slate-200">
+                                        <tr>
+                                            <th className="px-6 py-4 font-semibold text-slate-700">Order ID</th>
+                                            <th className="px-6 py-4 font-semibold text-slate-700">Customer</th>
+                                            <th className="px-6 py-4 font-semibold text-slate-700">Total</th>
+                                            <th className="px-6 py-4 font-semibold text-slate-700">Date</th>
+                                            <th className="px-6 py-4 font-semibold text-slate-700">Status</th>
+                                            <th className="px-6 py-4 font-semibold text-slate-700">Items</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {orders.map((order) => (
+                                            <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
+                                                <td className="px-6 py-4 font-mono text-sm text-slate-600">
+                                                    #{order.id.slice(0, 8)}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div>
+                                                        <div className="font-medium text-slate-900">{order.shipping_address?.fullName}</div>
+                                                        <div className="text-xs text-slate-500">{order.shipping_address?.city}</div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 font-bold text-slate-900">
+                                                    ${parseFloat(order.total_amount).toFixed(2)}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-slate-600">
+                                                    {new Date(order.created_at).toLocaleDateString()}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <select
+                                                        value={order.status}
+                                                        onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                                                        className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border-0 cursor-pointer focus:ring-2 focus:ring-primary/50 ${order.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                                                            order.status === 'shipped' ? 'bg-purple-100 text-purple-700' :
+                                                                order.status === 'processing' ? 'bg-blue-100 text-blue-700' :
+                                                                    order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                                                        'bg-yellow-100 text-yellow-800'
+                                                            }`}
+                                                    >
+                                                        <option value="pending">Pending</option>
+                                                        <option value="processing">Processing</option>
+                                                        <option value="shipped">Shipped</option>
+                                                        <option value="delivered">Delivered</option>
+                                                        <option value="cancelled">Cancelled</option>
+                                                    </select>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="text-sm text-slate-600">
+                                                        {order.order_items?.length} items
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Edit Modal */}

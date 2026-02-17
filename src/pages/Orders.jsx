@@ -23,6 +23,10 @@ const Orders = () => {
                                 name,
                                 images
                             )
+                        ),
+                        order_status_history (
+                            status,
+                            changed_at
                         )
                     `)
                     .order('created_at', { ascending: false })
@@ -49,6 +53,13 @@ const Orders = () => {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
+        })
+    }
+
+    const formatTime = (dateString) => {
+        return new Date(dateString).toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit'
         })
     }
 
@@ -96,8 +107,8 @@ const Orders = () => {
                                         <div className="flex items-center gap-3">
                                             <span className="font-bold text-slate-900 text-lg">Order #{order.id.slice(0, 8)}</span>
                                             <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                                                    order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                                                        'bg-blue-100 text-blue-700'
+                                                order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                                    'bg-blue-100 text-blue-700'
                                                 }`}>
                                                 {order.status}
                                             </span>
@@ -123,6 +134,47 @@ const Orders = () => {
                                             className="border-t border-slate-100 bg-slate-50/50"
                                         >
                                             <div className="p-6 space-y-6">
+                                                {/* Order Timeline */}
+                                                <div className="bg-white p-6 rounded-xl border border-slate-100">
+                                                    <h4 className="font-semibold text-slate-900 mb-6">Order Status</h4>
+                                                    <div className="relative">
+                                                        {/* Line */}
+                                                        <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-slate-100"></div>
+
+                                                        {['pending', 'processing', 'shipped', 'delivered'].map((stage, index) => {
+                                                            const historyItem = order.order_status_history?.find(h => h.status === stage)
+                                                            const isCompleted = !!historyItem
+                                                            const isCurrent = order.status === stage
+
+                                                            return (
+                                                                <div key={stage} className="relative flex gap-4 mb-6 last:mb-0">
+                                                                    <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center border-2 ${isCompleted || isCurrent
+                                                                        ? 'bg-blue-50 border-blue-500 text-blue-600'
+                                                                        : 'bg-white border-slate-200 text-slate-300'
+                                                                        }`}>
+                                                                        {isCompleted || isCurrent ? (
+                                                                            <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+                                                                        ) : (
+                                                                            <div className="w-2.5 h-2.5 rounded-full bg-slate-200" />
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="pt-1">
+                                                                        <h5 className={`font-semibold capitalize ${isCompleted || isCurrent ? 'text-slate-900' : 'text-slate-400'
+                                                                            }`}>
+                                                                            {stage}
+                                                                        </h5>
+                                                                        {historyItem && (
+                                                                            <p className="text-xs text-slate-500 mt-1">
+                                                                                {formatDate(historyItem.changed_at)} at {formatTime(historyItem.changed_at)}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </div>
+
                                                 {/* Shipping Info */}
                                                 <div className="flex items-start gap-3 text-sm text-slate-600 bg-white p-4 rounded-xl border border-slate-100">
                                                     <MapPin className="h-5 w-5 text-slate-400 mt-0.5" />

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
@@ -11,6 +12,8 @@ const Checkout = () => {
     const { user } = useAuth()
     const navigate = useNavigate()
     const [loading, setLoading] = useState(false)
+    const [success, setSuccess] = useState(false)
+    const [showConfirm, setShowConfirm] = useState(false)
     const [error, setError] = useState(null)
     const [formData, setFormData] = useState({
         fullName: '',
@@ -26,22 +29,23 @@ const Checkout = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value })
     }
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault()
-        setLoading(true)
-        setError(null)
-
         if (!user) {
             setError('You must be logged in to place an order.')
-            setLoading(false)
             return
         }
-
         if (cartItems.length === 0) {
             setError('Your cart is empty.')
-            setLoading(false)
             return
         }
+        setShowConfirm(true)
+    }
+
+    const handleConfirmOrder = async () => {
+        setLoading(true)
+        setError(null)
+        setShowConfirm(false)
 
         try {
             // Prepare items for RPC function
@@ -61,7 +65,7 @@ const Checkout = () => {
 
             // Order successful
             clearCart()
-            navigate('/orders')
+            setSuccess(true)
         } catch (err) {
             console.error('Error placing order:', err)
             setError(err.message || 'Failed to place order. Please try again.')
@@ -70,9 +74,102 @@ const Checkout = () => {
         }
     }
 
-    if (cartItems.length === 0) {
+    if (cartItems.length === 0 && !success) {
         navigate('/cart')
         return null
+    }
+
+    if (success) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden">
+                <div className="text-center relative z-10 p-10">
+                    <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{
+                            type: "spring",
+                            stiffness: 260,
+                            damping: 20
+                        }}
+                        className="w-32 h-32 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl relative"
+                    >
+                        <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1.2 }}
+                            transition={{ delay: 0.2, duration: 0.5, repeat: Infinity, repeatType: "reverse" }}
+                            className="absolute inset-0 bg-green-400 rounded-full opacity-50 z-[-1]"
+                        />
+                        <CheckCircle className="w-16 h-16 text-white" />
+                    </motion.div>
+
+                    <motion.h2
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="text-4xl font-bold text-slate-900 mb-4"
+                    >
+                        Order Placed Successfully!
+                    </motion.h2>
+
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                        className="text-slate-500 mb-8 text-lg"
+                    >
+                        Thank you for your purchase. Your order has been confirmed.
+                    </motion.p>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 }}
+                        className="flex flex-col sm:flex-row gap-4 justify-center"
+                    >
+                        <Link to="/orders">
+                            <button className="w-full sm:w-auto px-8 py-3 bg-white text-slate-900 border-2 border-slate-200 rounded-full font-bold text-lg hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm active:scale-95">
+                                Track Order
+                            </button>
+                        </Link>
+                        <Link to="/">
+                            <button className="w-full sm:w-auto px-10 py-3 bg-slate-900 text-white rounded-full font-bold text-lg hover:bg-primary transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2">
+                                Back to Home <ArrowLeft className="h-5 w-5 rotate-[135deg]" />
+                            </button>
+                        </Link>
+                    </motion.div>
+                </div>
+
+                {/* Confetti / Bubbles Effect */}
+                {[...Array(20)].map((_, i) => (
+                    <motion.div
+                        key={i}
+                        className="absolute rounded-full bg-blue-500/10 pointer-events-none"
+                        initial={{
+                            x: Math.random() * window.innerWidth,
+                            y: window.innerHeight + 100,
+                            scale: Math.random() * 0.5 + 0.5,
+                            opacity: 0
+                        }}
+                        animate={{
+                            y: -100,
+                            opacity: [0, 1, 0],
+                            rotate: Math.random() * 360
+                        }}
+                        transition={{
+                            duration: Math.random() * 5 + 5,
+                            repeat: Infinity,
+                            delay: Math.random() * 5,
+                            ease: "linear"
+                        }}
+                        style={{
+                            width: Math.random() * 50 + 20,
+                            height: Math.random() * 50 + 20,
+                            background: i % 2 === 0 ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)'
+                        }}
+                    />
+                ))}
+            </div>
+        )
     }
 
     return (
@@ -200,6 +297,43 @@ const Checkout = () => {
                     </div>
                 </div>
             </div>
+            {/* Confirmation Modal */}
+            <AnimatePresence>
+                {showConfirm && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl overflow-hidden relative"
+                        >
+                            <div className="text-center">
+                                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+                                    <AlertCircle className="h-6 w-6 text-blue-600" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-slate-900 mb-2">Confirm Order</h3>
+                                <p className="text-sm text-slate-500 mb-6">
+                                    Are you sure you want to place this order? The total amount is <span className="font-bold text-slate-900">${total.toFixed(2)}</span>.
+                                </p>
+                            </div>
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => setShowConfirm(false)}
+                                    className="flex-1 py-3 px-4 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold hover:bg-slate-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleConfirmOrder}
+                                    className="flex-1 py-3 px-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-primary transition-colors shadow-lg shadow-blue-900/10"
+                                >
+                                    Confirm Order
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }
