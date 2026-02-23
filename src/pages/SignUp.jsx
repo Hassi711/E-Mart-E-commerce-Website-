@@ -62,7 +62,7 @@ const SignUp = () => {
                         Create an Account
                     </h2>
                     <p className="mt-2 text-sm text-slate-600">
-                        Join ModernShop today
+                        Join ShopEx today
                     </p>
                 </div>
 

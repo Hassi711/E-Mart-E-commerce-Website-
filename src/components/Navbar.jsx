@@ -56,7 +56,7 @@ const Navbar = () => {
                 {/* Logo Area - Text Only, Larger */}
                 <Link to="/" className="flex items-center space-x-3 group">
                     <span className={`text-3xl font-bold font-sans tracking-tight transition-colors ${scrolled || !isHome ? 'text-slate-900' : 'text-white'}`}>
-                        Modern<span className="text-primary">Shop</span>
+                        Shop<span className="text-primary">Ex</span>
                     </span>
                 </Link>
 
