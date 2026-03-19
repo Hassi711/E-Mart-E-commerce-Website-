@@ -501,13 +501,19 @@ const AdminDashboard = () => {
                                                     <select
                                                         value={order.status}
                                                         onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                                                        className="bg-white border border-slate-200 rounded-md text-sm px-2 py-1"
+                                                        className={`bg-white border rounded-full text-xs font-bold px-3 py-1 outline-none transition-colors cursor-pointer ${order.status === 'pending' ? 'border-amber-200 text-amber-700 bg-amber-50' :
+                                                                order.status === 'processing' ? 'border-blue-200 text-blue-700 bg-blue-50' :
+                                                                    order.status === 'shipped' ? 'border-purple-200 text-purple-700 bg-purple-50' :
+                                                                        order.status === 'delivered' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' :
+                                                                            order.status === 'cancelled' ? 'border-rose-200 text-rose-700 bg-rose-50' :
+                                                                                'border-slate-200 text-slate-700'
+                                                            }`}
                                                     >
-                                                        <option value="pending">Pending</option>
-                                                        <option value="processing">Processing</option>
-                                                        <option value="shipped">Shipped</option>
-                                                        <option value="delivered">Delivered</option>
-                                                        <option value="cancelled">Cancelled</option>
+                                                        <option value="pending" className="bg-white text-slate-900">Pending</option>
+                                                        <option value="processing" className="bg-white text-slate-900">Processing</option>
+                                                        <option value="shipped" className="bg-white text-slate-900">Shipped</option>
+                                                        <option value="delivered" className="bg-white text-slate-900">Delivered</option>
+                                                        <option value="cancelled" className="bg-white text-slate-900">Cancelled</option>
                                                     </select>
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-slate-500">{new Date(order.created_at).toLocaleDateString()}</td>
